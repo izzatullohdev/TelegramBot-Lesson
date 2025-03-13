@@ -1,6 +1,7 @@
 {
   "name": "youtube-dars",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon index.js",
     "format": "prettier --ignore-unknown --write ."
   },
