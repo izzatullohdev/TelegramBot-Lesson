@@ -6,6 +6,7 @@
     "format": "prettier --ignore-unknown --write ."
   },
   "devDependencies": {
+    "axios": "^1.8.3",
     "dotenv": "^16.4.7",
     "node-telegram-bot-api": "^0.66.0",
     "prettier": "^3.5.3"

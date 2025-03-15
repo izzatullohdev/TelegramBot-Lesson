@@ -2,49 +2,64 @@ require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.TOKEN;
 const bot = new TelegramBot(token, { polling: true });
+const axios = require("axios");
 
-// 1-qadam
-// console.log(bot);
-// bot.getMe().then((me) => {
-//   console.log(me);
-// });
-
-// 2-qadam
-// bot.onText(/\/start/, (message) => {
-//   bot.sendMessage(
-//     message.chat.id,
-//     `Assalomu alaykum ${message.chat.first_name} `
-//   );
-// });
-// 3-dars
-// inline_keyboard
-bot.onText(/\/start/, (message) => {
-  bot.sendMessage(
-    message.chat.id,
-    `Assalomu alaykum ${message.chat.first_name} Pastdagi tugmalardan birini tanlang`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "Google",
-              url: "https://google.com",
-            },
-            {
-              text: "Bio bot",
-              callback_data: "bio_bot",
-            },
-          ],
-        ],
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+  try {
+    const response = await axios.get(
+      "https://jsonplaceholder.typicode.com/users"
+    );
+    const users = response.data;
+    let buttons = users.map((user) => [
+      {
+        text: user.name,
+        callback_data: `user_${user.id}`,
       },
-    }
-  );
+    ]);
+    bot.sendMessage(chatId, "Foydalanuvchi tanlang", {
+      reply_markup: {
+        inline_keyboard: buttons,
+      },
+    });
+  } catch (err) {
+    bot.sendMessage(chatId, "Api Bilan bog'lanishda xatolik yuz berdi");
+  }
 });
 
-// callback_query
-bot.on("callback_query", (query) => {
+bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
-  if (query.data === "bio_bot") {
-    bot.sendMessage(chatId, "Ushbu bot dasgasa dasturchi tomonidan yaratilgan");
+
+  if (query.data.startsWith("user_")) {
+    const userId = query.data.split("_")[1];
+    try {
+      const response = await axios.get(
+        `https://jsonplaceholder.typicode.com/users/${userId}`
+      );
+      const user = response.data;
+
+      bot.editMessageText(
+        `👤 *Ismi:* ${user.name}\n📧 *Email:* ${user.email}\n🏢 *Kompaniya:* ${user.company.name}`,
+        {
+          chat_id: chatId,
+          message_id: query.message.message_id,
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Boshqa foydalanuvchini tanlash",
+                  callback_data: "/start",
+                },
+              ],
+            ],
+          },
+        }
+      );
+    } catch (err) {
+      bot.sendMessage(chatId, "Ma'lumotlar olishda xatolik yuz berdi");
+    }
   }
+
+  bot.answerCallbackQuery(query.id);
 });
